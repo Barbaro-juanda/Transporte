@@ -220,11 +220,8 @@ export async function notifyPush(payload: PushEvent) {
   }
 }
 
-export async function savePushSubscription(userId: string, sub: PushSubscriptionJSON) {
+export async function savePushSubscription(_userId: string, sub: PushSubscriptionJSON) {
   const keys = sub.keys
   if (!sub.endpoint || !keys?.p256dh || !keys.auth) throw new Error('Suscripción incompleta')
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert({ user_id: userId, endpoint: sub.endpoint, p256dh: keys.p256dh, auth: keys.auth }, { onConflict: 'endpoint' })
-  if (error) fail(error)
+  await rpc('save_push_subscription', { p_endpoint: sub.endpoint, p_p256dh: keys.p256dh, p_auth: keys.auth })
 }

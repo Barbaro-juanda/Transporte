@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 const stub = readFileSync('tests/db/stub.sql', 'utf8')
 const migration = readFileSync('supabase/migrations/0001_schema.sql', 'utf8')
 const nameMigration = readFileSync('supabase/migrations/0003_passenger_name.sql', 'utf8')
+const pushMigration = readFileSync('supabase/migrations/0004_push_subscription.sql', 'utf8')
 
 const D = '00000000-0000-0000-0000-0000000000d1' // conductor
 const A = '00000000-0000-0000-0000-0000000000a1' // pasajera Ana, tarifa 4000
@@ -35,6 +36,7 @@ beforeEach(async () => {
   await db.exec(stub)
   await db.exec(migration)
   await db.exec(nameMigration)
+  await db.exec(pushMigration)
   await db.exec(`
     insert into auth.users(id, email) values ('${D}','d@x.co'), ('${A}','a@x.co'), ('${B}','b@x.co');
     insert into profiles(id, role, full_name, email) values
@@ -265,6 +267,29 @@ describe('nombre de la pasajera al entrar', () => {
   it('sin sesión no se puede cambiar el nombre', async () => {
     await as('')
     await expect(db.query(`select set_my_name('Pepe')`)).rejects.toThrow(/sesión/)
+  })
+})
+
+describe('suscripciones de notificaciones', () => {
+  const owners = () => rows<{ user_id: string }>(`select user_id from push_subscriptions where endpoint = 'https://push/e1'`)
+
+  it('guarda la suscripción de quien la envía', async () => {
+    await as(A)
+    await db.query(`select save_push_subscription('https://push/e1', 'k1', 'a1')`)
+    expect(await owners()).toEqual([{ user_id: A }])
+  })
+
+  it('si el mismo celular entra con otro usuario, la suscripción pasa a ese usuario sin error', async () => {
+    await as(D)
+    await db.query(`select save_push_subscription('https://push/e1', 'k1', 'a1')`)
+    await as(A)
+    await db.query(`select save_push_subscription('https://push/e1', 'k2', 'a2')`)
+    expect(await owners()).toEqual([{ user_id: A }])
+  })
+
+  it('sin sesión no se puede guardar', async () => {
+    await as('')
+    await expect(db.query(`select save_push_subscription('https://push/e1', 'k', 'a')`)).rejects.toThrow(/sesión/)
   })
 })
 
