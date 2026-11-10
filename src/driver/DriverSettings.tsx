@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { deletePaymentMethod, getNoticeHours, listPaymentMethods, savePaymentMethod, setNoticeHours } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
+import { supabase } from '../lib/supabase'
 import type { PaymentMethod } from '../lib/types'
 import { ErrorMsg, Loading } from '../ui/kit'
 
@@ -20,6 +21,47 @@ function MethodRow({ m, onChange }: { m: PaymentMethod; onChange: () => void }) 
       </div>
       <ErrorMsg message={act.error} />
     </div>
+  )
+}
+
+function ChangePassword() {
+  const act = useAction()
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [done, setDone] = useState(false)
+  const mismatch = pw2.length > 0 && pw !== pw2
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    setDone(false)
+    const ok = await act.run(async () => {
+      if (pw.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.')
+      if (pw !== pw2) throw new Error('Las contraseñas no coinciden.')
+      const { error } = await supabase.auth.updateUser({ password: pw })
+      if (error) throw new Error(error.message)
+      return true
+    })
+    if (ok) {
+      setPw('')
+      setPw2('')
+      setDone(true)
+    }
+  }
+
+  return (
+    <form className="card stack" onSubmit={save}>
+      <h3>Cambiar mi contraseña</h3>
+      <label>Contraseña nueva (mínimo 8 caracteres)
+        <input type="password" autoComplete="new-password" required minLength={8} value={pw} onChange={(e) => { setPw(e.target.value); setDone(false) }} />
+      </label>
+      <label>Repítela
+        <input type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
+      </label>
+      {mismatch && <p className="small">Las contraseñas no coinciden.</p>}
+      <button className="btn primary" disabled={act.busy || mismatch}>{act.busy ? 'Guardando…' : 'Guardar contraseña'}</button>
+      <ErrorMsg message={act.error} />
+      {done && <p className="small">Contraseña actualizada. Úsala la próxima vez que entres como conductor.</p>}
+    </form>
   )
 }
 
@@ -59,6 +101,8 @@ export default function DriverSettings() {
     <>
       <h1>Ajustes</h1>
       <ErrorMsg message={act.error} />
+
+      <ChangePassword />
 
       <form className="card stack" onSubmit={saveHours}>
         <h3>Plazo para avisar "hoy no voy"</h3>
