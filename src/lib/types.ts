@@ -4,7 +4,7 @@ export type Role = 'driver' | 'passenger'
 export type AnnouncementKind = 'subo' | 'no_subo' | 'no_bajo'
 export type VoidReason = 'conductor' | 'pasajera' | 'no subió'
 
-export type Profile = { id: string; role: Role; full_name: string; email: string }
+export type Profile = { id: string; role: Role; full_name: string; email: string; name_confirmed: boolean }
 
 export type PassengerRow = {
   id: string

@@ -3,9 +3,17 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/types'
 
-type AuthState = { loading: boolean; session: Session | null; profile: Profile | null; signOut: () => Promise<void> }
+type AuthState = {
+  loading: boolean
+  session: Session | null
+  profile: Profile | null
+  signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
+}
 
-const AuthContext = createContext<AuthState>({ loading: true, session: null, profile: null, signOut: async () => {} })
+const AuthContext = createContext<AuthState>({
+  loading: true, session: null, profile: null, signOut: async () => {}, refreshProfile: async () => {},
+})
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -34,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     supabase
       .from('profiles')
-      .select('id, role, full_name, email')
+      .select('id, role, full_name, email, name_confirmed')
       .eq('id', userId)
       .maybeSingle()
       .then(({ data }) => {
@@ -51,7 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
-  return <AuthContext.Provider value={{ loading, session, profile, signOut }}>{children}</AuthContext.Provider>
+  const refreshProfile = async () => {
+    if (!userId) return
+    const { data } = await supabase.from('profiles').select('id, role, full_name, email, name_confirmed').eq('id', userId).maybeSingle()
+    setProfile((data as Profile | null) ?? null)
+  }
+
+  return <AuthContext.Provider value={{ loading, session, profile, signOut, refreshProfile }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)

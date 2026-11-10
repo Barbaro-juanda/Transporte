@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import LoginPage from './auth/LoginPage'
+import NamePrompt from './auth/NamePrompt'
 import { Loading } from './ui/kit'
 import { isConfigured } from './lib/supabase'
 import type { Role } from './lib/types'
@@ -24,6 +25,7 @@ function RequireRole({ role, children }: { role: Role; children: React.ReactNode
   if (!session) return <Navigate to="/entrar" replace />
   if (!profile) return <NoProfile />
   if (profile.role !== role) return <Navigate to="/" replace />
+  if (profile.role === 'passenger' && !profile.name_confirmed) return <NamePrompt />
   return <>{children}</>
 }
 

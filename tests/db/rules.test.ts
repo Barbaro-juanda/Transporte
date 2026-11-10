@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 const stub = readFileSync('tests/db/stub.sql', 'utf8')
 const migration = readFileSync('supabase/migrations/0001_schema.sql', 'utf8')
+const nameMigration = readFileSync('supabase/migrations/0003_passenger_name.sql', 'utf8')
 
 const D = '00000000-0000-0000-0000-0000000000d1' // conductor
 const A = '00000000-0000-0000-0000-0000000000a1' // pasajera Ana, tarifa 4000
@@ -33,6 +34,7 @@ beforeEach(async () => {
   db = new PGlite()
   await db.exec(stub)
   await db.exec(migration)
+  await db.exec(nameMigration)
   await db.exec(`
     insert into auth.users(id, email) values ('${D}','d@x.co'), ('${A}','a@x.co'), ('${B}','b@x.co');
     insert into profiles(id, role, full_name, email) values
@@ -236,6 +238,33 @@ describe('comprobantes', () => {
   it('rechaza montos no positivos', async () => {
     await as(A)
     await expect(db.query(`select submit_receipt(0, 'A/1.jpg', 'h1')`)).rejects.toThrow()
+  })
+})
+
+describe('nombre de la pasajera al entrar', () => {
+  const profile = async (id: string) =>
+    (await rows<{ full_name: string; name_confirmed: boolean }>(`select full_name, name_confirmed from profiles where id = $1`, [id]))[0]
+
+  it('una pasajera nueva aparece sin nombre confirmado', async () => {
+    expect((await profile(A)).name_confirmed).toBe(false)
+  })
+
+  it('la pasajera guarda su nombre (sin espacios sobrantes) y queda confirmado', async () => {
+    await as(A)
+    await db.query(`select set_my_name('  Ana María  ')`)
+    expect(await profile(A)).toEqual({ full_name: 'Ana María', name_confirmed: true })
+    expect((await profile(B)).name_confirmed).toBe(false)
+  })
+
+  it('rechaza un nombre vacío o de una sola letra', async () => {
+    await as(A)
+    await expect(db.query(`select set_my_name('   ')`)).rejects.toThrow(/nombre/)
+    await expect(db.query(`select set_my_name('A')`)).rejects.toThrow(/nombre/)
+  })
+
+  it('sin sesión no se puede cambiar el nombre', async () => {
+    await as('')
+    await expect(db.query(`select set_my_name('Pepe')`)).rejects.toThrow(/sesión/)
   })
 })
 
