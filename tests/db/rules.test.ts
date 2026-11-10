@@ -6,6 +6,7 @@ const stub = readFileSync('tests/db/stub.sql', 'utf8')
 const migration = readFileSync('supabase/migrations/0001_schema.sql', 'utf8')
 const nameMigration = readFileSync('supabase/migrations/0003_passenger_name.sql', 'utf8')
 const pushMigration = readFileSync('supabase/migrations/0004_push_subscription.sql', 'utf8')
+const cutoffMigration = readFileSync('supabase/migrations/0005_absence_cutoff.sql', 'utf8')
 
 const D = '00000000-0000-0000-0000-0000000000d1' // conductor
 const A = '00000000-0000-0000-0000-0000000000a1' // pasajera Ana, tarifa 4000
@@ -37,6 +38,7 @@ beforeEach(async () => {
   await db.exec(migration)
   await db.exec(nameMigration)
   await db.exec(pushMigration)
+  await db.exec(cutoffMigration)
   await db.exec(`
     insert into auth.users(id, email) values ('${D}','d@x.co'), ('${A}','a@x.co'), ('${B}','b@x.co');
     insert into profiles(id, role, full_name, email) values
@@ -91,24 +93,29 @@ describe('"hoy no voy" y "no subió"', () => {
     await as(D)
     await publish(FUT, 'subo', null, null)
   })
-  // La ida de FUT es a las 06:56 Bogotá = 11:56 UTC; el límite con plazo de 2 h son las 09:56 UTC.
+  // El plazo es una hora fija del mismo día: 05:00 Bogotá = 10:00 UTC (sin importar la hora de recogida).
   const report = (now: string) =>
     db.query(`select private.report_absence($1, $2::date, 'ida', $3::timestamptz)`, [A, FUT, now])
 
-  it('permite avisar exactamente 2 horas antes', async () => {
-    await report('2099-03-02T09:56:00Z')
+  it('permite avisar exactamente a las 5:00 a. m. del mismo día', async () => {
+    await report('2099-03-02T10:00:00Z')
     expect((await trips(FUT, A))[0]).toMatchObject({ status: 'void', void_reason: 'pasajera' })
   })
 
-  it('rechaza avisar un segundo después del límite', async () => {
-    await expect(report('2099-03-02T09:56:01Z')).rejects.toThrow(/plazo vencido/)
+  it('rechaza avisar un segundo después de las 5:00 a. m.', async () => {
+    await expect(report('2099-03-02T10:00:01Z')).rejects.toThrow(/plazo vencido/)
     expect((await trips(FUT, A))[0].status).toBe('scheduled')
   })
 
-  it('respeta el plazo configurado en la app', async () => {
-    await db.exec(`update settings set notice_hours = 3`)
-    await expect(report('2099-03-02T08:56:01Z')).rejects.toThrow(/plazo vencido/)
-    await report('2099-03-02T08:56:00Z')
+  it('el plazo vale igual para la ida y el regreso, y es el mismo día', async () => {
+    await db.query(`select private.report_absence($1, $2::date, 'regreso', $3::timestamptz)`, [A, FUT, '2099-03-02T10:00:00Z'])
+    expect((await trips(FUT, A)).find((t) => t.direction === 'regreso')?.status).toBe('void')
+  })
+
+  it('respeta la hora de corte configurada en la app', async () => {
+    await db.exec(`update settings set absence_cutoff = '06:30'`)
+    await expect(report('2099-03-02T11:30:01Z')).rejects.toThrow(/plazo vencido/)
+    await report('2099-03-02T11:30:00Z')
   })
 
   it('no se puede avisar si no hay viaje ese día', async () => {

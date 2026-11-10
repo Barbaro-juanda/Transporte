@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { deletePaymentMethod, getNoticeHours, listPaymentMethods, savePaymentMethod, setNoticeHours } from '../lib/api'
+import { deletePaymentMethod, getAbsenceCutoff, listPaymentMethods, savePaymentMethod, setAbsenceCutoff } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
 import { supabase } from '../lib/supabase'
 import type { PaymentMethod } from '../lib/types'
@@ -66,9 +66,9 @@ function ChangePassword() {
 }
 
 export default function DriverSettings() {
-  const data = useAsync(() => Promise.all([getNoticeHours(), listPaymentMethods()]), [])
+  const data = useAsync(() => Promise.all([getAbsenceCutoff(), listPaymentMethods()]), [])
   const act = useAction()
-  const [hours, setHours] = useState('2')
+  const [hours, setHours] = useState('05:00')
   const [saved, setSaved] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newDetails, setNewDetails] = useState('')
@@ -83,7 +83,7 @@ export default function DriverSettings() {
 
   const saveHours = async (e: FormEvent) => {
     e.preventDefault()
-    if ((await act.run(() => setNoticeHours(Number(hours)))) !== undefined) {
+    if ((await act.run(() => setAbsenceCutoff(hours))) !== undefined) {
       setSaved(true)
       data.reload()
     }
@@ -106,8 +106,8 @@ export default function DriverSettings() {
 
       <form className="card stack" onSubmit={saveHours}>
         <h3>Plazo para avisar "hoy no voy"</h3>
-        <label>Horas de anticipación antes de la recogida
-          <input type="number" min={0} max={48} required inputMode="numeric" value={hours} onChange={(e) => { setHours(e.target.value); setSaved(false) }} />
+        <label>Hora límite del mismo día del viaje
+          <input type="time" required value={hours} onChange={(e) => { setHours(e.target.value); setSaved(false) }} />
         </label>
         <button className="btn primary" disabled={act.busy}>Guardar plazo</button>
         {saved && <p className="muted small">Plazo guardado.</p>}

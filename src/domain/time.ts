@@ -11,9 +11,14 @@ export function pickupInstant(date: string, time: string): Date {
   return new Date(`${date}T${hhmm}:00-05:00`)
 }
 
-/** Verdadero si `now` es igual o anterior a (recogida − plazo). */
-export function canReportAbsence(now: Date, pickup: Date, noticeHours: number): boolean {
-  return now.getTime() <= pickup.getTime() - noticeHours * 3_600_000
+/** Límite para avisar "hoy no voy": una hora fija (`cutoff`, 'HH:mm') del MISMO día del viaje, en Bogotá. */
+export function absenceDeadline(date: string, cutoff: string): Date {
+  return pickupInstant(date, cutoff)
+}
+
+/** Verdadero si `now` es igual o anterior al límite. */
+export function canReportAbsence(now: Date, deadline: Date): boolean {
+  return now.getTime() <= deadline.getTime()
 }
 
 /** Un viaje se cobra si está programado y ya llegó su hora de recogida. */

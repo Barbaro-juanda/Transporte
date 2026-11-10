@@ -8,6 +8,7 @@
 //   { event: 'receipt_reviewed', id }           (solo conductor)  → pasajera dueña
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
+import { announcementText, bogotaToday } from '../_shared/messages.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +17,6 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
-const KIND_TEXT: Record<string, string> = {
-  subo: 'Sí hay viaje',
-  no_subo: 'No puedo subir: no hay viaje de ida',
-  no_bajo: 'No puedo bajarlas: no hay viaje de regreso',
-}
 const cop = (n: number) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 
 Deno.serve(async (req) => {
@@ -62,7 +58,7 @@ Deno.serve(async (req) => {
       recipients = (all ?? []).map((r) => r.id)
     }
     title = body.updated ? 'Aviso actualizado' : 'Nuevo aviso de viaje'
-    text = `${a.date}: ${KIND_TEXT[a.kind] ?? a.kind}${a.note ? ` · ${a.note}` : ''}`
+    text = announcementText(a, bogotaToday())
     target = '/pasajera'
   } else if (body.event === 'absence') {
     const { data: trip } = await admin.from('trips').select('id').eq('passenger_id', user.id)

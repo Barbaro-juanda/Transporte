@@ -16,14 +16,15 @@ async function rpc<T = unknown>(fn: string, args?: Record<string, unknown>): Pro
 
 // ───── Configuración ─────
 
-export async function getNoticeHours(): Promise<number> {
-  const { data, error } = await supabase.from('settings').select('notice_hours').single()
+/** Hora fija ('HH:mm') hasta la que las pasajeras pueden avisar "hoy no voy", del mismo día del viaje. */
+export async function getAbsenceCutoff(): Promise<string> {
+  const { data, error } = await supabase.from('settings').select('absence_cutoff').single()
   if (error) fail(error)
-  return data.notice_hours as number
+  return String(data.absence_cutoff).slice(0, 5)
 }
 
-export async function setNoticeHours(hours: number) {
-  const { error } = await supabase.from('settings').update({ notice_hours: hours }).eq('singleton', true)
+export async function setAbsenceCutoff(cutoff: string) {
+  const { error } = await supabase.from('settings').update({ absence_cutoff: cutoff }).eq('singleton', true)
   if (error) fail(error)
 }
 

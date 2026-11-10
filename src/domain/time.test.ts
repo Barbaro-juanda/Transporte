@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canReportAbsence, isChargeable, pickupInstant } from './time'
+import { absenceDeadline, canReportAbsence, isChargeable, pickupInstant } from './time'
 
 describe('pickupInstant', () => {
   it('interpreta la fecha y hora en horario de Bogotá (UTC-5)', () => {
@@ -7,29 +7,29 @@ describe('pickupInstant', () => {
   })
 })
 
-describe('canReportAbsence', () => {
-  const pickup = pickupInstant('2026-11-10', '06:56')
+describe('plazo para avisar "hoy no voy" (hora fija del mismo día)', () => {
+  const deadline = absenceDeadline('2026-11-10', '05:00')
 
-  it('permite avisar exactamente 2 horas antes', () => {
-    expect(canReportAbsence(new Date('2026-11-10T09:56:00Z'), pickup, 2)).toBe(true)
+  it('el plazo es las 5:00 a. m. de Bogotá del mismo día', () => {
+    expect(deadline.toISOString()).toBe('2026-11-10T10:00:00.000Z')
   })
 
-  it('rechaza avisar un segundo después del límite', () => {
-    expect(canReportAbsence(new Date('2026-11-10T09:56:01Z'), pickup, 2)).toBe(false)
+  it('permite avisar exactamente a las 5:00 a. m.', () => {
+    expect(canReportAbsence(new Date('2026-11-10T10:00:00Z'), deadline)).toBe(true)
   })
 
-  it('rechaza avisar después de la hora de recogida', () => {
-    expect(canReportAbsence(new Date('2026-11-10T12:30:00Z'), pickup, 2)).toBe(false)
+  it('rechaza avisar un segundo después', () => {
+    expect(canReportAbsence(new Date('2026-11-10T10:00:01Z'), deadline)).toBe(false)
   })
 
-  it('respeta un plazo configurado distinto de 2 horas', () => {
-    expect(canReportAbsence(new Date('2026-11-10T08:56:00Z'), pickup, 3)).toBe(true)
-    expect(canReportAbsence(new Date('2026-11-10T08:56:01Z'), pickup, 3)).toBe(false)
+  it('permite avisar desde la noche anterior', () => {
+    expect(canReportAbsence(new Date('2026-11-10T00:30:00Z'), deadline)).toBe(true)
   })
 
-  it('permite avisar la noche anterior (límite cruza medianoche en Bogotá)', () => {
-    const early = pickupInstant('2026-11-10', '00:30')
-    expect(canReportAbsence(new Date('2026-11-10T03:30:00Z'), early, 2)).toBe(true)
+  it('respeta una hora de corte distinta configurada', () => {
+    const late = absenceDeadline('2026-11-10', '06:30')
+    expect(canReportAbsence(new Date('2026-11-10T11:30:00Z'), late)).toBe(true)
+    expect(canReportAbsence(new Date('2026-11-10T11:30:01Z'), late)).toBe(false)
   })
 })
 

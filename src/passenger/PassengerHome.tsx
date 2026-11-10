@@ -1,8 +1,8 @@
 import { useAuth } from '../auth/AuthProvider'
-import { cancelAbsence, getNoticeHours, listAnnouncements, listTrips, notifyPush, reportAbsence } from '../lib/api'
+import { cancelAbsence, getAbsenceCutoff, listAnnouncements, listTrips, notifyPush, reportAbsence } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
 import { formatBogotaTime, formatCop, formatDateString, todayBogota } from '../lib/format'
-import { canReportAbsence, pickupInstant } from '../domain/time'
+import { absenceDeadline, canReportAbsence } from '../domain/time'
 import type { TripRow } from '../lib/types'
 import { Chip, DIR_LABEL, ErrorMsg, KIND_LABEL, Loading, tripChip, tripTime } from '../ui/kit'
 import Icon from '../ui/Icon'
@@ -14,7 +14,7 @@ export default function PassengerHome() {
   const data = useAsync(
     () =>
       Promise.all([
-        getNoticeHours(),
+        getAbsenceCutoff(),
         listTrips({ from: today, to: todayBogota(new Date(Date.now() + 7 * 86_400_000)), passengerId: uid }),
         listAnnouncements({ from: today }),
       ]),
@@ -23,7 +23,7 @@ export default function PassengerHome() {
   const act = useAction()
 
   if (!data.data) return data.error ? <ErrorMsg message={data.error} /> : <Loading />
-  const [notice, trips, announcements] = data.data
+  const [cutoff, trips, announcements] = data.data
   const now = new Date()
   const dates = Array.from(new Set([...trips.map((t) => t.date), ...announcements.map((a) => a.date)])).sort()
 
@@ -59,9 +59,9 @@ export default function PassengerHome() {
           <ul className="list">
             {trips.filter((t) => t.date === date).sort((a, b) => (a.direction === 'ida' ? -1 : 1) - (b.direction === 'ida' ? -1 : 1)).map((t) => {
               const chip = tripChip(t)
-              const pickup = pickupInstant(t.date, t.pickup_time)
-              const allowed = canReportAbsence(now, pickup, notice)
-              const deadline = formatBogotaTime(new Date(pickup.getTime() - notice * 3_600_000))
+              const limit = absenceDeadline(t.date, cutoff)
+              const allowed = canReportAbsence(now, limit)
+              const deadline = formatBogotaTime(limit)
               return (
                 <li key={t.id}>
                   <div className="row">
@@ -87,7 +87,7 @@ export default function PassengerHome() {
           {trips.every((t) => t.date !== date) && <p className="muted small">Sin viaje programado para ti este día.</p>}
         </section>
       ))}
-      <p className="muted small center">Puedes avisar que no vas hasta {notice} {notice === 1 ? 'hora' : 'horas'} antes de la recogida.</p>
+      <p className="muted small center">Puedes avisar que no vas hasta las {formatBogotaTime(absenceDeadline(today, cutoff))} del mismo día del viaje.</p>
     </>
   )
 }
