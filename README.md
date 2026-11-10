@@ -68,6 +68,13 @@ npm run build
 
 Las pruebas ejecutan la migración SQL real sobre PGlite (Postgres en memoria), incluida la privacidad por pasajera (RLS).
 
+## Diseño y movimiento
+
+- **Colores (regla 60-30-10):** azul `#0047E8` domina (fondos), naranja `#FE5002` guía la acción (tarjetas clave y botones), blanco para texto, íconos y campos. Texto sobre naranja en azul marino `#00164D` por contraste (5,2 a 1).
+- **Íconos:** propios, en `src/ui/Icon.tsx` (SVG en línea, sin librería).
+- **Animaciones:** solo CSS (`src/styles.css`, al final) y `transform`/`opacity`, que no obligan al navegador a recalcular el layout. Cada pantalla entra con sus bloques escalonados; el saldo cuenta hasta su valor; la pantalla de acceso dibuja una ruta con una camioneta. Se desactivan solas si la persona pidió "reducir movimiento" en su celular.
+- **Velocidad de carga:** sin librerías de animación; cada rol descarga solo su parte de la app (carga diferida por pantalla); la fuente Outfit va dentro de la app en un solo archivo de 32 KB (sin pedirla a Google); y la app, la fuente y los íconos quedan guardados en el celular para que las visitas siguientes abran al instante.
+
 ## Qué está y qué no está verificado
 
 - ✅ Reglas de plazo, cobro, saldo, comprobantes y privacidad: probadas (`npm test`).

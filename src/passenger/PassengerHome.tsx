@@ -5,6 +5,7 @@ import { formatBogotaTime, formatCop, formatDateString, todayBogota } from '../l
 import { canReportAbsence, pickupInstant } from '../domain/time'
 import type { TripRow } from '../lib/types'
 import { Chip, DIR_LABEL, ErrorMsg, KIND_LABEL, Loading, tripChip, tripTime } from '../ui/kit'
+import Icon from '../ui/Icon'
 
 export default function PassengerHome() {
   const { profile } = useAuth()
@@ -45,7 +46,7 @@ export default function PassengerHome() {
       {dates.length === 0 && <p className="muted center">No hay avisos ni viajes programados por ahora.</p>}
 
       {dates.map((date) => (
-        <section key={date} className="card">
+        <section key={date} className={date === today ? 'card hero' : 'card'}>
           <h2 style={{ marginTop: 0 }}>{date === today ? 'Hoy' : formatDateString(date)}</h2>
 
           {announcements.filter((a) => a.date === date).map((a) => (
@@ -69,7 +70,7 @@ export default function PassengerHome() {
                   </div>
                   {t.status === 'scheduled' &&
                     (allowed ? (
-                      <button className="btn small" disabled={act.busy} onClick={() => absent(t)}>Hoy no voy</button>
+                      <button className="btn primary" disabled={act.busy} onClick={() => absent(t)}><Icon name="novoy" size={20} /> {date === today ? 'Hoy no voy' : 'No voy'}</button>
                     ) : (
                       <p className="muted small">Ya no puedes avisar (el plazo era hasta las {deadline}).</p>
                     ))}

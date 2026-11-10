@@ -1,7 +1,8 @@
 import { useAuth } from '../auth/AuthProvider'
 import { getMyBalance, listAdjustments, listReceipts, listTrips } from '../lib/api'
 import { useAsync } from '../lib/hooks'
-import { balanceLabel, formatCop, formatDateString } from '../lib/format'
+import { formatCop, formatDateString } from '../lib/format'
+import { AnimatedNumber } from '../ui/Motion'
 import { isChargeable, pickupInstant } from '../domain/time'
 import { DIR_LABEL, ErrorMsg, Loading, tripTime } from '../ui/kit'
 
@@ -14,7 +15,6 @@ export default function PassengerBalance() {
   )
   if (!data.data) return data.error ? <ErrorMsg message={data.error} /> : <Loading />
   const [balance, trips, adjustments, payments] = data.data
-  const b = balanceLabel(balance)
   const now = new Date()
   const charged = trips
     .filter((t) => isChargeable({ status: t.status, pickup: pickupInstant(t.date, t.pickup_time) }, now))
@@ -24,8 +24,11 @@ export default function PassengerBalance() {
   return (
     <>
       <h1>Mi saldo</h1>
-      <div className={`balance ${b.tone}`}>{b.text}</div>
-      <p className="muted small">Se suman los viajes realizados y los ajustes, y se restan los pagos confirmados.</p>
+      <section className="card hero">
+        <div className="eyebrow">{balance > 0 ? 'Debes' : balance < 0 ? 'Saldo a favor' : 'Estás al día'}</div>
+        <div className="balance"><AnimatedNumber value={Math.abs(balance)} format={formatCop} /></div>
+        <p className="small">Se suman los viajes realizados y los ajustes, y se restan los pagos que el conductor confirmó.</p>
+      </section>
 
       <h2>Viajes cobrados</h2>
       {charged.length === 0 && <p className="muted">Todavía no hay viajes cobrados.</p>}

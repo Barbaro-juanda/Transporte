@@ -1,18 +1,22 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import LoginPage from './auth/LoginPage'
-import Shell from './ui/Shell'
 import { Loading } from './ui/kit'
 import { isConfigured } from './lib/supabase'
-import DriverHome from './driver/DriverHome'
-import DriverPassengers from './driver/DriverPassengers'
-import DriverPassengerDetail from './driver/DriverPassengerDetail'
-import DriverReceipts from './driver/DriverReceipts'
-import DriverSettings from './driver/DriverSettings'
-import PassengerHome from './passenger/PassengerHome'
-import PassengerBalance from './passenger/PassengerBalance'
-import PassengerPayments from './passenger/PassengerPayments'
 import type { Role } from './lib/types'
+
+// Cada parte se descarga solo cuando se necesita: la pantalla de acceso carga sin el panel del conductor
+// ni las pantallas de la pasajera, y cada rol solo baja lo suyo.
+const Shell = lazy(() => import('./ui/Shell'))
+const DriverHome = lazy(() => import('./driver/DriverHome'))
+const DriverPassengers = lazy(() => import('./driver/DriverPassengers'))
+const DriverPassengerDetail = lazy(() => import('./driver/DriverPassengerDetail'))
+const DriverReceipts = lazy(() => import('./driver/DriverReceipts'))
+const DriverSettings = lazy(() => import('./driver/DriverSettings'))
+const PassengerHome = lazy(() => import('./passenger/PassengerHome'))
+const PassengerBalance = lazy(() => import('./passenger/PassengerBalance'))
+const PassengerPayments = lazy(() => import('./passenger/PassengerPayments'))
 
 function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
   const { loading, session, profile } = useAuth()
@@ -66,6 +70,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/entrar" element={<Login />} />
@@ -83,6 +88,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

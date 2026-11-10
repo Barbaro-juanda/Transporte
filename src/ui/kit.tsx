@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { formatBogotaTime } from '../lib/format'
+import { Skeleton } from './Motion'
 import { pickupInstant, type Direction } from '../domain/time'
 import type { AnnouncementKind, TripRow } from '../lib/types'
 
@@ -31,7 +32,7 @@ export function Chip({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'info';
 }
 
 export function Loading() {
-  return <p className="muted center">Cargando…</p>
+  return <Skeleton />
 }
 
 export function ErrorMsg({ message }: { message?: string | null }) {

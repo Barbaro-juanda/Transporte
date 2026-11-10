@@ -10,6 +10,8 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
+      // Se guarda también la fuente y los íconos: las visitas siguientes cargan al instante y sin red.
+      injectManifest: { globPatterns: ['**/*.{js,css,html,woff2,png,webmanifest}'] },
       manifest: {
         name: 'Transporte universitario',
         short_name: 'Transporte',
@@ -17,8 +19,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#f6f7f9',
-        theme_color: '#1f6feb',
+        background_color: '#0047E8',
+        theme_color: '#0047E8',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },

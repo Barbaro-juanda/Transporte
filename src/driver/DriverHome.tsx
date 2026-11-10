@@ -63,7 +63,7 @@ export default function DriverHome() {
         <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 'auto' }} aria-label="Fecha" />
       </div>
 
-      <section className="card stack">
+      <section className="card hero stack">
         <h2 style={{ margin: 0 }}>Publicar aviso</h2>
         <div role="radiogroup" aria-label="Tipo de aviso">
           {KINDS.map((k) => (

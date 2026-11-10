@@ -4,6 +4,8 @@ import { invitePassenger, listPassengers } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
 import { balanceLabel, formatCop } from '../lib/format'
 import { Chip, ErrorMsg, Loading } from '../ui/kit'
+import Icon from '../ui/Icon'
+import { AnimatedNumber } from '../ui/Motion'
 
 export default function DriverPassengers() {
   const data = useAsync(listPassengers, [])
@@ -29,8 +31,18 @@ export default function DriverPassengers() {
     <>
       <div className="row">
         <h1>Pasajeras</h1>
-        <button className="btn primary small" onClick={() => setOpen((o) => !o)}>{open ? 'Cerrar' : 'Agregar'}</button>
+        <button className="btn primary small" onClick={() => setOpen((o) => !o)}>
+          {open ? 'Cerrar' : <><Icon name="mas" size={18} /> Agregar</>}
+        </button>
       </div>
+
+      <section className="card hero">
+        <div className="eyebrow">Por cobrar</div>
+        <div className="balance">
+          <AnimatedNumber value={data.data.reduce((sum, p) => sum + Math.max(0, p.balance_cop), 0)} format={formatCop} />
+        </div>
+        <p className="small">{data.data.filter((p) => p.active).length} pasajeras activas</p>
+      </section>
 
       {open && (
         <form className="card stack" onSubmit={onAdd}>
@@ -56,7 +68,7 @@ export default function DriverPassengers() {
                 <strong>{p.full_name}</strong> {!p.active && <Chip tone="bad">Inactiva</Chip>}
                 <div className="muted small">{formatCop(p.fare_cop)} por viaje · {p.ida_time} / {p.regreso_time}</div>
               </div>
-              <Chip tone={b.tone === 'debt' ? 'bad' : 'ok'}>{b.text.replace('Debes', 'Debe')}</Chip>
+              <Chip tone={b.tone === 'debt' ? 'warn' : 'bad'}>{b.text.replace('Debes', 'Debe')}</Chip>
             </div>
           </Link>
         )
